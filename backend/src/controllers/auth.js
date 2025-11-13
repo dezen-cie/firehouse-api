@@ -1,4 +1,3 @@
-// src/controllers/auth.js
 const { User, RefreshToken } = require('../../models');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
@@ -6,6 +5,18 @@ const crypto = require('crypto');
 const { z } = require('zod');
 
 const isProd = process.env.NODE_ENV === 'production';
+const BASE_URL = process.env.BASE_URL || 'http://localhost:4000';
+
+// Normalise l'URL avatar envoyée au front
+function normalizeAvatar(avatarUrl) {
+  if (!avatarUrl) return null;
+  // les avatars uploadés : /uploads/...
+  if (avatarUrl.startsWith('/uploads/')) {
+    return `${BASE_URL}${avatarUrl}`;
+  }
+  // les illustrations front : /illu-pompier.png → on laisse tel quel
+  return avatarUrl;
+}
 
 // options cookies pour dev / prod
 const accessCookieOptions = {
@@ -61,7 +72,7 @@ exports.login = async (req,res)=>{
       firstName:user.firstName,
       lastName:user.lastName,
       grade:user.grade,
-      avatarUrl:user.avatarUrl,
+      avatarUrl: normalizeAvatar(user.avatarUrl),
       visibleInList:user.visibleInList
     }
   });

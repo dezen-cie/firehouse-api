@@ -7,7 +7,10 @@ const { createClient } = require('@supabase/supabase-js');
 const DRIVER = process.env.STORAGE_DRIVER || 'local';
 const ROOT = path.join(process.cwd(), 'uploads');
 
-function ensureDir(p){ if(!fs.existsSync(p)) fs.mkdirSync(p, { recursive: true }); }
+// Création récursive du dossier si besoin
+function ensureDir(p) {
+  if (!fs.existsSync(p)) fs.mkdirSync(p, { recursive: true });
+}
 
 // map mimetype -> extension sûre (pour images sans extension ou exotiques)
 function extFromMime(mime) {
@@ -18,7 +21,7 @@ function extFromMime(mime) {
   if (m.includes('png')) return '.png';
   if (m.includes('webp')) return '.webp';
   if (m.includes('gif')) return '.gif';
-  // HEIC/HEIF et autres → on force .jpg (express.static servira image/jpeg)
+  // HEIC/HEIF et autres → on force .jpg
   return '.jpg';
 }
 
@@ -31,7 +34,10 @@ function normalizeExt(origName, mime) {
   return ext;
 }
 
-async function saveLocal(file, folder){
+/**
+ * Stockage local (dev / éventuellement prod si disque persistant).
+ */
+async function saveLocal(file, folder) {
   ensureDir(path.join(ROOT, folder));
   const ext = normalizeExt(file.originalname, file.mimetype);
   const name = uuid() + ext;
@@ -40,46 +46,76 @@ async function saveLocal(file, folder){
   // déplace (au lieu de copier) pour éviter les fichiers tmp qui trainent
   await fs.promises.rename(file.path, dest);
 
-  // on retourne une storageKey POSIX (slashs) pour être sûr côté URL
+  // storageKey POSIX (slashs) pour la cohérence
   return { storageKey: `${folder}/${name}` };
 }
 
-async function removeLocal(key){
+async function removeLocal(key) {
   const dest = path.join(ROOT, key);
-  if(fs.existsSync(dest)) fs.unlinkSync(dest);
+  if (fs.existsSync(dest)) fs.unlinkSync(dest);
 }
 
-function supabase(){
+/**
+ * Client Supabase
+ */
+function supabase() {
   const url = process.env.SUPABASE_URL;
   const key = process.env.SUPABASE_KEY;
   const bucket = process.env.SUPABASE_BUCKET || 'firehouse';
+
+  if (!url || !key) {
+    throw new Error('SUPABASE_URL ou SUPABASE_KEY manquant dans les variables d’environnement');
+  }
+
   const client = createClient(url, key);
   return { client, bucket };
 }
 
-async function saveSupabase(file, folder){
+/**
+ * Stockage Supabase (prod recommandée)
+ */
+async function saveSupabase(file, folder) {
   const { client, bucket } = supabase();
   const ext = normalizeExt(file.originalname, file.mimetype);
   const name = `${folder}/${uuid()}${ext}`;
   const buf = fs.readFileSync(file.path);
-  const { error } = await client.storage.from(bucket).upload(name, buf, {
-    upsert: false,
-    contentType: file.mimetype || 'image/jpeg'
-  });
-  if(error) throw error;
-  return { storageKey: name };
+
+  try {
+    const { error } = await client.storage
+      .from(bucket)
+      .upload(name, buf, {
+        upsert: false,
+        contentType: file.mimetype || 'image/jpeg',
+      });
+
+    if (error) throw error;
+
+    return { storageKey: name };
+  } finally {
+    // on supprime le fichier tmp multer quoi qu’il arrive
+    try {
+      if (file.path && fs.existsSync(file.path)) {
+        await fs.promises.unlink(file.path);
+      }
+    } catch {
+      // on ne casse pas l’API pour un échec de cleanup
+    }
+  }
 }
 
-async function removeSupabase(key){
+async function removeSupabase(key) {
   const { client, bucket } = supabase();
   await client.storage.from(bucket).remove([key]);
 }
 
-async function save(file, folder='files'){
+/**
+ * API unifiée
+ */
+async function save(file, folder = 'files') {
   return DRIVER === 'supabase' ? saveSupabase(file, folder) : saveLocal(file, folder);
 }
 
-async function remove(key){
+async function remove(key) {
   return DRIVER === 'supabase' ? removeSupabase(key) : removeLocal(key);
 }
 

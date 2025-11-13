@@ -1,6 +1,17 @@
+// src/controllers/users.js
 const { User } = require('../../models');
 const bcrypt = require('bcrypt');
 const { z } = require('zod');
+
+const BASE_URL = process.env.BASE_URL || 'http://localhost:4000';
+
+function normalizeAvatar(avatarUrl) {
+  if (!avatarUrl) return null;
+  if (avatarUrl.startsWith('/uploads/')) {
+    return `${BASE_URL}${avatarUrl}`;
+  }
+  return avatarUrl;
+}
 
 /**
  * Schéma de validation pour les mots de passe administrateur.
@@ -25,7 +36,13 @@ exports.list = async (req, res) => {
     ],
   });
 
-  return res.json(users);
+  const data = users.map(u => {
+    const plain = u.toJSON();
+    plain.avatarUrl = normalizeAvatar(plain.avatarUrl);
+    return plain;
+  });
+
+  return res.json(data);
 };
 
 /**
@@ -70,7 +87,10 @@ exports.create = async (req, res) => {
     avatarUrl: '/illu-pompier.png',
   });
 
-  return res.status(201).json(user);
+  const plain = user.toJSON();
+  plain.avatarUrl = normalizeAvatar(plain.avatarUrl);
+
+  return res.status(201).json(plain);
 };
 
 /**
@@ -117,7 +137,10 @@ exports.update = async (req, res) => {
 
   await user.update(payload);
 
-  return res.json(user);
+  const plain = user.toJSON();
+  plain.avatarUrl = normalizeAvatar(plain.avatarUrl);
+
+  return res.json(plain);
 };
 
 /**

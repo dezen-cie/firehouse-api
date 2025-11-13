@@ -3,6 +3,16 @@ const multer = require('multer');
 const path = require('path');
 const { save, remove } = require('../services/storage');
 
+const BASE_URL = process.env.BASE_URL || 'http://localhost:4000';
+
+function normalizeAvatar(avatarUrl) {
+  if (!avatarUrl) return null;
+  if (avatarUrl.startsWith('/uploads/')) {
+    return `${BASE_URL}${avatarUrl}`;
+  }
+  return avatarUrl;
+}
+
 const upload = multer({
   dest: path.join(process.cwd(), 'uploads', 'tmp'),
   limits: {
@@ -20,7 +30,12 @@ exports.uploadAvatarMiddleware = upload.single('avatar');
  */
 exports.get = async (req, res) => {
   const user = await User.findByPk(req.user.id);
-  return res.json(user);
+  if (!user) return res.status(404).json({ error: 'Introuvable' });
+
+  const plain = user.toJSON();
+  plain.avatarUrl = normalizeAvatar(plain.avatarUrl);
+
+  return res.json(plain);
 };
 
 /**
@@ -35,18 +50,25 @@ exports.update = async (req, res) => {
   }
 
   const user = await User.findByPk(req.user.id);
+  if (!user) return res.status(404).json({ error: 'Introuvable' });
+
   await user.update(payload);
 
-  return res.json(user);
+  const plain = user.toJSON();
+  plain.avatarUrl = normalizeAvatar(plain.avatarUrl);
+
+  return res.json(plain);
 };
 
 /**
  * Met à jour l'avatar de l'utilisateur connecté.
- * L'ancien fichier local est supprimé si nécessaire.
+ * L'ancien fichier est supprimé si nécessaire.
  */
 exports.avatar = async (req, res) => {
   const user = await User.findByPk(req.user.id);
+  if (!user) return res.status(404).json({ error: 'Introuvable' });
 
+  // suppression de l'ancien fichier local/supabase si c'était un upload
   if (user.avatarUrl && user.avatarUrl.startsWith('/uploads/')) {
     try {
       await remove(user.avatarUrl.replace('/uploads/', ''));
@@ -60,5 +82,6 @@ exports.avatar = async (req, res) => {
 
   await user.update({ avatarUrl: newPath });
 
-  return res.json({ avatarUrl: newPath });
+  const publicUrl = normalizeAvatar(newPath);
+  return res.json({ avatarUrl: publicUrl });
 };

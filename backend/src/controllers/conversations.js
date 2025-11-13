@@ -1,10 +1,18 @@
 const { Conversation, Message, User } = require('../../models');
 const { Op } = require('sequelize');
 
+const BASE_URL = process.env.BASE_URL || 'http://localhost:4000';
+
+function normalizeAvatar(avatarUrl) {
+  if (!avatarUrl) return null;
+  if (avatarUrl.startsWith('/uploads/')) {
+    return `${BASE_URL}${avatarUrl}`;
+  }
+  return avatarUrl;
+}
+
 /**
  * Retourne la liste des conversations de l'utilisateur courant.
- * - Un admin voit toutes les conversations.
- * - Un utilisateur ne voit que ses propres conversations.
  */
 exports.list = async (req, res) => {
   const isAdmin = req.user.role === 'admin' || req.user.role === 'super_admin';
@@ -19,8 +27,20 @@ exports.list = async (req, res) => {
     order: [['updatedAt', 'DESC']],
   });
 
-  return res.json(convos);
+  const data = convos.map(c => {
+    const plain = c.toJSON();
+    if (plain.user) {
+      plain.user.avatarUrl = normalizeAvatar(plain.user.avatarUrl);
+    }
+    if (plain.admin) {
+      plain.admin.avatarUrl = normalizeAvatar(plain.admin.avatarUrl);
+    }
+    return plain;
+  });
+
+  return res.json(data);
 };
+
 
 /**
  * Crée une nouvelle conversation si elle n'existe pas déjà.

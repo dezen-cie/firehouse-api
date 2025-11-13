@@ -5,12 +5,15 @@ const { z } = require('zod');
 const { Op } = require('sequelize');
 const { save } = require('../services/storage');
 
-const upload = multer({
-  dest: path.join(process.cwd(), 'uploads', 'tmp'),
-  limits: {
-    fileSize: parseInt(process.env.UPLOAD_MAX_BYTES || '5242880', 10),
-  },
-});
+const BASE_URL = process.env.BASE_URL || 'http://localhost:4000';
+
+function normalizeAvatar(avatarUrl) {
+  if (!avatarUrl) return null;
+  if (avatarUrl.startsWith('/uploads/')) {
+    return `${BASE_URL}${avatarUrl}`;
+  }
+  return avatarUrl;
+}
 
 /**
  * Middleware d'upload de fichier associé au statut.
@@ -137,7 +140,7 @@ exports.teamView = async (req, res) => {
       firstName: u.firstName,
       lastName: u.lastName,
       grade: u.grade,
-      avatarUrl: u.avatarUrl,
+      avatarUrl: normalizeAvatar(u.avatarUrl),
       status: s ? s.status : 'ABSENT',
     };
   });
