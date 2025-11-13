@@ -1,8 +1,16 @@
 const path = require('path');
 const fs = require('fs');
-const archiver = require('archiver');
+let archiver = null; // sera éventuellement chargé
+
+try {
+  archiver = require('archiver');
+} catch (e) {
+  console.warn('archiver non disponible, export ZIP désactivé en runtime');
+}
+
 const { File, User } = require('../../models');
 const { createClient } = require('@supabase/supabase-js');
+
 
 const DRIVER = process.env.STORAGE_DRIVER || 'local';
 const UPLOAD_ROOT = path.join(process.cwd(), 'uploads');
@@ -159,32 +167,29 @@ exports.download = async (req, res) => {
 /**
  * Supprime un fichier (stockage et enregistrement en base).
  */
-exports.destroy = async (req, res) => {
-  const id = parseInt(req.params.id, 10);
-  const row = await File.findByPk(id);
-
-  if (!row) {
-    return res.status(404).json({ error: 'Fichier introuvable' });
+exports.exportZip = async (req, res) => {
+  // En prod (Supabase) ou si archiver est absent, on désactive proprement
+  if (DRIVER !== 'local' || !archiver) {
+    return res.status(501).json({ error: 'Export ZIP indisponible dans cette configuration' });
   }
 
-  if (DRIVER === 'local') {
-    const abs = path.join(UPLOAD_ROOT, row.storageKey);
+  res.setHeader('Content-Type', 'application/zip');
+  res.setHeader('Content-Disposition', 'attachment; filename="firehouse-files.zip"');
+
+  const archive = archiver('zip', { zlib: { level: 9 } });
+  archive.on('error', () => res.status(500).end());
+  archive.pipe(res);
+
+  const rows = await File.findAll();
+  for (const r of rows) {
+    const abs = path.join(UPLOAD_ROOT, r.storageKey);
     if (fs.existsSync(abs)) {
-      fs.unlinkSync(abs);
-    }
-  } else {
-    try {
-      const { client, bucket } = supabase();
-      await client.storage.from(bucket).remove([row.storageKey]);
-    } catch (e) {
-      // En prod on ne remonte pas l'erreur de suppression externe si le record DB est supprimé
+      archive.file(abs, { name: r.originalName || path.basename(abs) });
     }
   }
-
-  await row.destroy();
-
-  return res.json({ ok: true });
+  archive.finalize();
 };
+
 
 /**
  * Exporte tous les fichiers présents sur le stockage local dans une archive ZIP.
