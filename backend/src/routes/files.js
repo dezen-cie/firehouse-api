@@ -1,16 +1,16 @@
-// backend/src/routes/files.js
+// src/routes/files.js
 const { Router } = require('express');
 const ctrl = require('../controllers/files');
 
 const r = Router();
 
-// Boîte de réception fichiers
+// Inbox pour la page admin
 r.get('/inbox', ctrl.inbox);
 
-// Export ZIP (local uniquement, 501 sinon)
+// Export ZIP (désactivé => 501)
 r.get('/export', ctrl.exportZip);
 
-// Liste générale
+// Liste générale (si tu l’utilises)
 r.get('/', ctrl.list);
 
 // Aperçu inline
