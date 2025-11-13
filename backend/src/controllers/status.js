@@ -1,3 +1,4 @@
+// src/controllers/status.js
 const { StatusHistory, File, User } = require('../../models');
 const multer = require('multer');
 const path = require('path');
@@ -14,6 +15,13 @@ function normalizeAvatar(avatarUrl) {
   }
   return avatarUrl;
 }
+
+const upload = multer({
+  dest: path.join(process.cwd(), 'uploads', 'tmp'),
+  limits: {
+    fileSize: parseInt(process.env.UPLOAD_MAX_BYTES || '5242880', 10),
+  },
+});
 
 /**
  * Middleware d'upload de fichier associé au statut.
