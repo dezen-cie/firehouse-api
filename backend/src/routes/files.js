@@ -1,22 +1,21 @@
 // src/routes/files.js
 const { Router } = require('express');
 const ctrl = require('../controllers/files');
-
 const r = Router();
 
-// Inbox pour la page admin
+// Liste reçus (page admin)
 r.get('/inbox', ctrl.inbox);
 
-// Export ZIP (désactivé => 501)
+// Export ZIP (désactivé proprement)
 r.get('/export', ctrl.exportZip);
 
-// Liste générale (si tu l’utilises)
+// Liste complète
 r.get('/', ctrl.list);
 
 // Aperçu inline
 r.get('/:id/view', ctrl.view);
 
-// Téléchargement
+// Download
 r.get('/:id/download', ctrl.download);
 
 // Suppression
