@@ -1,0 +1,74 @@
+@use '../styles/variables' as *;
+
+.messages-page{
+  .chat-only{
+    display:flex; flex-direction:column; gap:10px; padding:10px;
+
+    .row-top{
+      display:flex; gap:8px; align-items:center; flex-wrap:wrap;
+      .create-select{ min-width:280px }
+      button{ padding:10px 12px; border-radius:12px; border:0; background:$color-primary; color:#fff; font-weight:600 }
+    }
+
+    /* --- Select custom avec pastilles --- */
+    .select-wrap{ position:relative; min-width:260px }
+    .select-button{
+      width:100%; padding:10px 12px; border:1px solid #e5e5e5; border-radius:12px;
+      background:#fff; display:flex; align-items:center; justify-content:space-between;
+      .label{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+      .chev{ margin-left:8px; opacity:.6 }
+    }
+    .select-list{
+      position:absolute; top:44px; left:0; right:0; background:#fff;
+      border:1px solid #eee; border-radius:12px; box-shadow:$shadow;
+      max-height:260px; overflow:auto; z-index:5;
+
+      .select-item{
+        display:flex; align-items:center; justify-content:space-between; gap:8px;
+        padding:10px 12px; cursor:pointer;
+        .name{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .dot{ width:10px; height:10px; border-radius:50%; background:#E53935; flex:0 0 10px; }
+      }
+      .select-item:hover{ background:#f5f7ff }
+      .select-item[aria-selected="true"]{ background:#f0f4ff }
+    }
+
+    .title{ font-weight:700; font-size:18px }
+
+    .list{
+      @include card; padding:12px; height:60vh; overflow:auto;
+      display:flex; flex-direction:column; gap:8px
+    }
+
+    .msg{
+      display:flex;
+      &.left{ justify-content:flex-start }
+      &.right{ justify-content:flex-end }
+      &.mine .bubble{ background: color-mix(in srgb, $color-primary 75%, white); color:#fff }
+      .bubble{ background:#fff; border-radius:16px; padding:10px 14px; box-shadow:$shadow; max-width:75% }
+    }
+
+    .composer{
+      display:flex; gap:8px; align-items:flex-end;
+
+      textarea{
+        flex:1;
+        padding:12px;
+        border:1px solid #e5e5e5;
+        border-radius:12px;
+        resize:none;                 /* pas de poignée de redim */
+        overflow-y:auto;             /* vertical uniquement */
+        overflow-x:hidden;           /* pas de scroll horizontal */
+        white-space:pre-wrap;        /* conserve \n, wrap auto */
+        word-break:break-word;       /* coupe les mots très longs */
+        max-height:35vh;             /* évite de manger tout l’écran */
+        font: inherit;               /* même police que partout */
+      }
+
+      button{
+        padding:12px 14px; border-radius:12px; border:0;
+        background:$color-primary; color:#fff; font-weight:600
+      }
+    }
+  }
+}

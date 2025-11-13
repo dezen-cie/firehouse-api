@@ -1,0 +1,8 @@
+@use '../styles/variables' as *;
+.tabs{ display:flex; gap:8px; padding:8px; background:#fff; position:sticky; top:56px; z-index:9;
+  a{ flex:1; padding:10px; border:1px solid #eee; border-radius:12px; background:#fff; text-align:center; text-decoration:none; color:#333; font-weight:600 }
+  a.active{ background:$color-primary; color:#fff; border-color:$color-primary }
+}
+@media (min-width: $bp-admin){
+  .tabs{ top:64px }
+}

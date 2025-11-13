@@ -1,0 +1,33 @@
+@use '../styles/variables' as *;
+.user-dash{
+  .content{ padding:16px;
+    .flash{
+      width: 100%;
+      position: sticky;
+      z-index: 1000;
+      top: 20px;
+      padding: 12px 14px;
+      border-radius: 12px;
+      text-align: center;
+      font-weight: 600;
+      margin: 8px 0 12px 0;
+      box-shadow: $shadow;
+
+      &--success{
+        background: #39AE93;  
+        color: #fff;          
+      }
+    }
+
+    .profile{ text-align:center;
+      .portrait{ width:200px; height:200px; object-fit:cover; border-radius:8px; display:block; margin:16px auto 8px; cursor:pointer }
+      .name{ font-size:24px; font-weight:600 }
+      .grade{ color:#666 }
+    }
+    .grid{ display:grid; grid-template-columns:1fr 1fr; gap:12px; margin:16px 0 8px }
+    label{ display:block; margin:10px 0 6px }
+    input[type='text'], input[type='datetime-local'], input[type='file'], input:not([type]){ width:100%; padding:12px; border:1px solid #e5e5e5; border-radius:12px }
+    .cta{ margin:18px 0; width:100%; padding:14px; background:$color-primary; color:#fff; border:0; border-radius:12px; font-weight:600 }
+    .ok{ color:#2a7; margin-top:6px }
+  }
+}

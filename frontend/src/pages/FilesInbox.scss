@@ -1,0 +1,51 @@
+@use '../styles/variables' as *;
+
+.files-page .content{
+  padding:16px;
+
+  .toolbar{
+    display:flex; justify-content:flex-end; margin-bottom:8px;
+    button{
+      padding:10px 14px; border-radius:12px; border:0;
+      background:$color-primary; color:#fff; font-weight:600
+    }
+  }
+
+  .list{
+    display:grid; gap:8px;
+
+    .row{
+      @include card;
+      padding:12px;
+      display:grid;
+      grid-template-columns: 1fr auto auto;
+      gap:10px;
+      align-items:center;
+
+      /* Bandeau méta expéditeur placé AVANT le contenu */
+      .sender-meta-row{
+        grid-column: 1 / -1;                
+        color: rgba(164, 164, 164, 0.49);   
+        font-size: 10px;                    
+        font-style: italic;                 
+        margin: 0 0 4px 2px;                
+      }
+    }
+
+    .actions{
+      display:flex; gap:8px;
+
+      :first-child:hover{
+        background-color: $color-primary;
+        color: #fff;
+      }
+      :nth-child(2):hover{
+        background-color: $color-intervention;
+        color: #fff;
+      }
+      button{
+        padding:8px 10px; border-radius:10px; border:0; background:#f3f3f3
+      }
+    }
+  }
+}

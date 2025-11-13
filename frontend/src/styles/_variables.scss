@@ -1,0 +1,16 @@
+$color-primary: #3561C1;
+$color-available: #39AE93;
+$color-intervention: #F16D3F;
+$color-unavailable: #FEC33D;
+$color-absent: #A4A4A4;
+$color-white: #ffffff;
+$radius: 16px;
+$shadow: 0 8px 16px rgba(0,0,0,0.08);
+
+@mixin card {
+  background: #fff;
+  border-radius: $radius;
+  box-shadow: $shadow;
+}
+
+$bp-admin: 1024px;

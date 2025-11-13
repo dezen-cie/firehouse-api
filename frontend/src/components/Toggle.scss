@@ -1,0 +1,56 @@
+@use '../styles/variables' as *;
+
+/* Wrapper avec libellé cliquable */
+.fh-toggle-wrap{
+  display:flex; align-items:center; justify-content:space-between; gap:12px;
+  .label-btn{
+    background:transparent; border:0; padding:0;
+    font: inherit; color:#777; cursor:pointer;
+    &:hover{ text-decoration:underline; }
+    &:disabled{ cursor:not-allowed; opacity:.6; text-decoration:none; }
+  }
+  &.is-disabled{ opacity:.7; }
+}
+
+/* Switch pill */
+.fh-toggle{
+  --track-w: 46px;
+  --track-h: 24px;
+  --thumb: 20px;
+
+  display:inline-flex;
+  align-items:center;
+  justify-content:flex-start;
+  width: var(--track-w);
+  height: var(--track-h);
+  padding:0;
+  border:0;
+  background:transparent;
+  cursor:pointer;
+  border-radius: 999px;
+  outline: none;
+
+  .track{
+    position: relative;
+    width:100%;
+    height:100%;
+    background:#E6E6E6;                /* OFF */
+    border-radius: 999px;
+    transition: background .18s ease;
+  }
+  .thumb{
+    position:absolute;
+    top: 2px; left: 2px;
+    width: var(--thumb); height: var(--thumb);
+    background:#fff; border-radius:50%;
+    box-shadow: 0 1px 2px rgba(0,0,0,.15);
+    transition: transform .18s ease;
+    will-change: transform;
+  }
+
+  &.is-on .track{ background: $color-available; } /* #39AE93 */
+  &.is-on .thumb{ transform: translateX(calc(var(--track-w) - var(--thumb) - 4px)); }
+
+  &:focus-visible .track{ box-shadow: 0 0 0 3px rgba($color-primary,.2); }
+  &:disabled{ cursor:not-allowed; opacity:.6; }
+}

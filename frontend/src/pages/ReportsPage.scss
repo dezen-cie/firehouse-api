@@ -1,0 +1,144 @@
+@use '../styles/variables' as *;
+
+.reports-page{
+  .content{ padding:16px;
+
+    .row{ display:flex; gap:8px; align-items:center; margin-bottom:8px;
+      input{ padding:8px 10px; border-radius:10px; border:1px solid #e5e5e5 }
+    }
+
+    h2{ font-size:20px; margin:8px 0 10px }
+
+    .items{ display:grid; gap:10px; max-height: 400px; overflow-y: auto;
+      .item{ @include card; padding:12px; display:grid; grid-template-columns:56px 1fr auto; gap:12px; align-items:center;
+        img{ width:auto; height:56px; border-radius:50% }
+        .name{ font-weight:600 } .grade{ color:#666; font-size:13px }
+        .note{ color:#666; font-size:12px; margin-top:4px }
+        .tag{ padding:6px 10px; border-radius:999px; color:#fff;
+          &.green{ background:$color-available }
+          &.red{ background:$color-intervention }
+          &.yellow{ background:$color-unavailable; color:#333 }
+          &.grey{ background:$color-absent }
+        }
+      }
+    }
+
+    .stats{ display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin:16px 0;
+      @media (max-width: 570px) {grid-template-columns: repeat(2, 1fr);}
+      .tile{ @include card; padding:12px; text-align:center; b{ font-size:28px } }
+    }
+
+    .chart{
+      @include card;
+      padding:16px;
+      margin-bottom:16px;
+      display:grid;
+      grid-template-rows:auto 1fr auto; 
+      gap:16px;
+
+      .title{ font-weight:600; }
+
+      .plot{
+        //--chart-h: var(--chart-h, 162px);
+        --chart-h: 162px !important;
+        --grid-step: var(--grid-step, 24px);
+        --bar-gap: var(--bar-gap, 9px);
+
+        display:grid;
+        grid-template-columns:36px 1fr;
+        column-gap:8px;
+        height: var(--chart-h);
+        position:relative;
+
+        
+        background:
+          repeating-linear-gradient(
+            to top,
+            #f0f2f7 0,
+            #f0f2f7 1px,
+            transparent 1px,
+            transparent var(--grid-step)
+          );
+        border-radius:12px;
+
+        
+        &::after{
+          content:"";
+          position:absolute;
+          left:0; right:0; bottom:0;
+          height:2px;
+          background:#dfe5f2;
+          pointer-events:none;
+        }
+      }
+
+      
+      .yaxis{
+        display:flex; flex-direction:column; justify-content:space-between;
+        height: 100%;
+        .tick{
+          font-size:12px; color:#666;
+          line-height:var(--grid-step);
+          height:var(--grid-step);
+          display:flex;
+          align-items:flex-end; 
+          transform: translateX(10px);
+        }
+      }
+
+     
+      .pane{
+        height:100%;
+        display:flex; flex-direction:column;
+        overflow-x:auto; overflow-y:hidden;
+      }
+
+      .bars{
+        flex:1 0 auto;
+        display:flex; gap:var(--bar-gap);
+        align-items:flex-end; 
+        width: max(100%, 24 * 42px + 23 * var(--bar-gap));
+      }
+
+      .bar{
+        flex: 0 0 calc((100% - (23 * var(--bar-gap))) / 24);
+        min-width: 42px;
+        display:flex; flex-direction:column; align-items:center;
+      }
+
+      
+      .stack{
+        display:flex; flex-direction:column; gap:0;
+        height:100%; width:100%; align-items:stretch; justify-content:flex-end;
+      }
+      .s{ display:block; width:100%; border-radius:0 }
+
+      .available{ background:$color-available }    
+      .busy{ background:$color-unavailable }        
+      .absent{ background:$color-absent }     
+
+     
+      .xaxis{
+        padding-top:12px;     
+        display:flex; gap:var(--bar-gap);
+        width: max(100%, 24 * 42px + 23 * var(--bar-gap));
+      }
+      .xlab{
+        flex: 0 0 calc((100% - (23 * var(--bar-gap))) / 24);
+        min-width: 42px;
+        font-size:11px; color:#666; text-align:center;
+      }
+
+      .legend{
+        margin-top: 6px;
+        padding-top: 8px;
+        display:flex; gap:16px; align-items:center; flex-wrap:wrap;
+        .leg{ display:flex; align-items:center; gap:6px; font-size:12px; color:#555 }
+        .dot{ width:12px; height:12px; border-radius:3px; display:inline-block }
+        .dot.available{ background:$color-available }
+        .dot.busy{ background:$color-unavailable }
+        .dot.absent{ background:$color-absent }
+      }
+    }
+  }
+}

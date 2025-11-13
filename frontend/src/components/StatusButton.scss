@@ -1,0 +1,20 @@
+@use '../styles/variables' as *;
+
+.status-btn{
+  width: 100%;
+  padding: 14px 12px;
+  border-radius: 14px;
+  color: #fff;
+  font-weight: 600;
+  box-sizing: border-box;
+  border: 2px solid transparent !important; // ← pour écraser les resets globaux
+  transition: transform .12s ease, box-shadow .12s ease, border-color .12s ease;
+  box-shadow: $shadow;
+  text-align: center;
+
+  &:active { transform: scale(.99); }
+
+  &.active{
+    border-color: #000 !important; // ← contour noir bien visible
+  }
+}

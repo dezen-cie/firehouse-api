@@ -1,0 +1,11 @@
+@use '../styles/variables' as *;
+.profile-page .content{ padding:16px;
+  .portrait{ display:grid; place-items:center; gap:6px; margin-bottom:12px; cursor:pointer;
+    img{ width:140px; height:140px; border-radius:8px; object-fit:cover; box-shadow:$shadow }
+    span{ font-size:12px; color:#666 }
+  }
+  .row{ display:grid; gap:6px; margin-bottom:10px }
+  input{ padding:12px; border:1px solid #e5e5e5; border-radius:12px }
+  .chk{ display:flex; align-items:center; gap:8px; margin:10px 0 }
+  button{ padding:12px 14px; border-radius:12px; border:0; background:$color-primary; color:#fff; font-weight:600 }
+}

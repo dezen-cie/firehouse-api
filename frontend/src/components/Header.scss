@@ -1,0 +1,20 @@
+@use '../styles/variables' as *;
+.fh-header{
+  background: $color-primary; color: $color-white; padding: 12px 16px; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:10;
+  .brand{ display:flex; align-items:center; gap:10px; cursor:pointer;
+    img{ width:fit-content; height:70px }
+    .title{ font-weight:600 }
+  }
+  .actions{ display:flex; align-items:center; gap:12px; position:relative;
+    .icon{ position:relative; background:transparent; border:0; color:$color-white; display:grid; place-items:center; text-decoration:none;
+      .badge{ position:absolute; top:-4px; right:-6px; background:#e33; color:#fff; border-radius:10px; padding:0 6px; font-size:11px; line-height:18px; height:18px; min-width:18px; text-align:center }
+    }
+    .avatar{ display:flex; align-items:center; gap:6px; cursor:pointer; position:relative;
+      img{ width:32px; height:32px; border-radius:50%; border:2px solid rgba(255,255,255,.7); object-fit:cover }
+      .dropdown{ position:absolute; right:0; top:calc(100% + 8px); background:#fff; color:#222; border-radius:12px; box-shadow:0 8px 24px rgba(0,0,0,.12); display:flex; flex-direction:column; overflow:hidden;
+        a,button{ padding:10px 14px; text-align:left; border:0; background:#fff; font:inherit; color:#222; text-decoration:none; }
+        a:hover,button:hover{ background:#f5f5f5 }
+      }
+    }
+  }
+}
