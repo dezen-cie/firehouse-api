@@ -1,3 +1,12 @@
+process.on('unhandledRejection', (err) => {
+  console.error('UNHANDLED REJECTION:', err);
+});
+
+process.on('uncaughtException', (err) => {
+  console.error('UNCAUGHT EXCEPTION:', err);
+  process.exit(1);
+})
+
 require('dotenv').config();
 const express = require('express');
 const cookieParser = require('cookie-parser');
