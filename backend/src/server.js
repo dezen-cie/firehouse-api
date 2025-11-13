@@ -11,14 +11,8 @@ const jwt = require('jsonwebtoken');
 const { sequelize } = require('../models');
 
 const isDev = process.env.NODE_ENV !== 'production';
+const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || 'http://localhost:5173';
 
-console.log('SERVER BOOT', {
-  NODE_ENV: process.env.NODE_ENV,
-  DATABASE_URL: process.env.DATABASE_URL,
-  STORAGE_DRIVER: process.env.STORAGE_DRIVER,
-});
-
-// Sécurité basique
 const app = express();
 app.use(express.json());
 app.use(cookieParser());
@@ -29,32 +23,27 @@ app.use(
   })
 );
 
-// CORS : en prod tu peux affiner, là on garde large
 app.use(
   cors({
-    origin: true,
+    origin: [FRONTEND_ORIGIN, 'http://localhost:5173', 'http://127.0.0.1:5173'],
     credentials: true,
   })
 );
 
-// Rate limit
 app.use(rateLimit({ windowMs: 60 * 1000, max: 200 }));
-
-// Static
 app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 app.use('/public', express.static(path.join(process.cwd(), 'public')));
 
-// HTTP + Socket.io
 const server = http.createServer(app);
 const io = require('socket.io')(server, {
   cors: {
-    origin: true,
+    origin: [FRONTEND_ORIGIN, 'http://localhost:5173', 'http://127.0.0.1:5173'],
     credentials: true,
+    methods: ['GET', 'POST'],
   },
   connectionStateRecovery: true,
 });
 
-// Parsing cookies pour le handshake socket
 function parseCookies(cookieHeader = '') {
   return cookieHeader.split(';').reduce((acc, part) => {
     const [k, ...v] = part.split('=');
@@ -64,16 +53,13 @@ function parseCookies(cookieHeader = '') {
   }, {});
 }
 
-// Inject io dans req pour les controllers
 app.use((req, res, next) => {
   req.io = io;
   next();
 });
 
-// Routes API
 app.use('/api', require('./routes'));
 
-// Auth socket via JWT (cookie accessToken ou Authorization)
 io.use((socket, next) => {
   try {
     let raw = socket.handshake?.auth?.token;
@@ -92,45 +78,29 @@ io.use((socket, next) => {
     socket.user = user;
     return next();
   } catch (e) {
-    console.error('Socket auth error:', e.message);
     return next(e);
   }
 });
 
-// Rooms socket
 io.on('connection', (socket) => {
   const u = socket.user;
-  if (!u) return;
-
-  if (u.role === 'admin' || u.role === 'super_admin') socket.join('admins');
-  socket.join(`user:${u.id}`);
-
-  socket.on('conversation:join', (id) => {
-    if (!id) return;
-    socket.join(`conversation:${id}`);
-  });
+  if (u) {
+    if (u.role === 'admin' || u.role === 'super_admin') socket.join('admins');
+    socket.join(`user:${u.id}`);
+  }
+  socket.on('conversation:join', (id) => socket.join(`conversation:${id}`));
 });
 
-// Port : Render ignore ce que tu choisis et injecte le sien dans process.env.PORT
 const PORT = process.env.PORT || 4000;
-
 server.listen(PORT, async () => {
-  console.log('API listening on port', PORT);
-
+  console.log('API listening on', PORT, {
+    NODE_ENV: process.env.NODE_ENV,
+    FRONTEND_ORIGIN,
+  });
   try {
     await sequelize.authenticate();
     console.log('DB connected');
   } catch (e) {
     console.error('DB connection error:', e.message);
-    // On NE fait PAS process.exit ici, on laisse quand même tourner le serveur
   }
-});
-
-// Juste loguer, ne pas tuer le process brutalement
-process.on('unhandledRejection', (err) => {
-  console.error('UNHANDLED REJECTION', err);
-});
-
-process.on('uncaughtException', (err) => {
-  console.error('UNCAUGHT EXCEPTION', err);
 });
