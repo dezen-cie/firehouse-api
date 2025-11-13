@@ -1,3 +1,5 @@
+console.log('SERVER BOOT', { NODE_ENV: process.env.NODE_ENV, DATABASE_URL: process.env.DATABASE_URL });
+
 require('dotenv').config();
 const express = require('express');
 const cookieParser = require('cookie-parser');
