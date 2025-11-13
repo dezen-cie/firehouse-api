@@ -18,14 +18,15 @@ app.use(express.json());
 app.use(cookieParser());
 app.use(
   helmet({
-    contentSecurityPolicy: isDev ? false : undefined,
-    crossOriginEmbedderPolicy: isDev ? false : undefined,
+    contentSecurityPolicy: false,
+    crossOriginEmbedderPolicy: false,
+    crossOriginResourcePolicy: false,
   })
 );
 
 app.use(
   cors({
-    origin: [FRONTEND_ORIGIN, 'http://localhost:5173', 'http://127.0.0.1:5173'],
+    origin: [FRONTEND_ORIGIN, 'http://localhost:5173', 'http://127.0.0.1:5173', 'https://firehouse-server.vercel.app'],
     credentials: true,
   })
 );
