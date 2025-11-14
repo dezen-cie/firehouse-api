@@ -76,26 +76,33 @@ exports.login = async (req,res)=>{
   });
 };
 
-exports.refresh = async (req,res)=>{
+exports.refresh = async (req, res) => {
   const token = req.cookies?.refreshToken;
-  if(!token) return res.status(401).json({error:'No refresh token'});
+  if (!token) {
+    return res.status(401).json({ error: 'No refresh token' });
+  }
 
   const hash = crypto.createHash('sha256').update(token).digest('hex');
-  const found = await RefreshToken.findOne({ where: { tokenHash: hash, revokedAt: null } });
-  if(!found) return res.status(401).json({error:'Invalid refresh'});
+  const found = await RefreshToken.findOne({
+    where: { tokenHash: hash, revokedAt: null }
+  });
 
-  try{
-    const payload = jwt.verify(token, process.env.JWT_REFRESH_SECRET);
-    const user = await User.findByPk(payload.id);
-    if(!user) return res.status(401).json({error:'Invalid user'});
-
-    const accessToken = signAccess(user);
-    res.cookie('accessToken', accessToken, accessCookieOptions);
-    res.json({ ok:true, accessToken });
-  }catch(e){
-    return res.status(401).json({error:'Invalid token'});
+  if (!found) {
+    return res.status(401).json({ error: 'Invalid refresh' });
   }
+
+  // On ne re-vérifie pas le refresh token via jwt.verify :
+  // on fait confiance à l'entrée en base.
+  const user = await User.findByPk(found.userId);
+  if (!user) {
+    return res.status(401).json({ error: 'Invalid user' });
+  }
+
+  const accessToken = signAccess(user);
+  res.cookie('accessToken', accessToken, accessCookieOptions);
+  return res.json({ ok: true });
 };
+
 
 exports.logout = async (req,res)=>{
   const token = req.cookies?.refreshToken;
