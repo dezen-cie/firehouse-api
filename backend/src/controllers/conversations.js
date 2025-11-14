@@ -135,9 +135,10 @@ exports.send = async (req, res) => {
     },
   };
 
-  // Diffusion du message dans la room de la conversation
+  // 1️⃣ Temps réel dans la page de discussion
   req.io?.to(`conversation:${id}`).emit('conversation:message', payload);
 
+  // 2️⃣ Badges & notifications pour les participants (sauf l’auteur)
   const convo = await Conversation.findByPk(id);
 
   if (convo) {
@@ -146,25 +147,23 @@ exports.send = async (req, res) => {
     );
 
     for (const uid of recipients) {
-      const sockets = await req.io.in(`user:${uid}`).fetchSockets();
-      const inConversation = sockets.some((s) =>
-        s.rooms.has(`conversation:${id}`)
-      );
+      // 👉 Toujours notifier le user dans sa room perso
+      req.io.to(`user:${uid}`).emit('message:new', {
+        conversationId: id,
+        message: payload.message,
+      });
 
-      // Si le destinataire n'est pas déjà dans la room de la conversation,
-      // on envoie une notification générique + mise à jour des badges.
-      if (!inConversation) {
-        req.io.to(`user:${uid}`).emit('message:new', { conversationId: id });
-        req.io.to(`user:${uid}`).emit('badge:update', {});
-      }
+      // 👉 Toujours déclencher le recalcul des badges
+      req.io.to(`user:${uid}`).emit('badge:update', {});
     }
   } else {
-    // Si la conversation n'existe plus, on met simplement à jour les badges globalement
+    // cas ultra rare : conversation supprimée entre-temps
     req.io?.emit('badge:update', {});
   }
 
   return res.status(201).json(payload.message);
 };
+
 
 /**
  * Marque un message comme lu et déclenche une mise à jour des badges côté clients.
