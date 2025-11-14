@@ -23,6 +23,7 @@ export default function UserDashboard(){
   const effectiveStatus: Status | null = selectedStatus ?? currentStatus
 
   const isReturnEnabled = effectiveStatus === 'UNAVAILABLE' || effectiveStatus === 'ABSENT'
+  const isCommentEnabled  = effectiveStatus === 'UNAVAILABLE' || effectiveStatus === 'ABSENT'
   const hasStatusChange = selectedStatus !== null
   const hasComment = comment.trim().length > 0
   const hasReturn = isReturnEnabled && !!returnAt
@@ -77,7 +78,7 @@ export default function UserDashboard(){
       fd.append('status', selectedStatus as Status)
       has = true
     }
-    if(hasComment){
+     if (hasComment && isCommentEnabled) {
       fd.append('comment', comment)
       has = true
     }
@@ -112,6 +113,7 @@ export default function UserDashboard(){
     setSelectedStatus(status)
     if(status === 'AVAILABLE' || status === 'INTERVENTION'){
       setReturnAt('')
+      setComment('')
     }
   }
 
@@ -181,9 +183,10 @@ export default function UserDashboard(){
 
         <label>Commentaire</label>
         <input
-          placeholder="Message pour l’admin"
+          placeholder={isCommentEnabled ? "Message pour l’administration" : "Disponible uniquement si vous êtes indisponible/absent"}
           value={comment}
           onChange={e=>setComment(e.target.value)}
+          disabled={!isCommentEnabled}
         />
 
         <div className="return-row">

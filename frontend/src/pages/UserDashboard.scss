@@ -51,6 +51,12 @@
       border-radius:12px;
     }
 
+    input[disabled]{
+      background: #f5f5f5;
+      color: #aaa;
+      cursor: not-allowed;
+  }
+
     /* ---- ligne "De retour à" ---- */
 
     .return-row{

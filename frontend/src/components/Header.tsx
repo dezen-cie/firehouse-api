@@ -64,7 +64,7 @@ export default function Header() {
     <header className="fh-header">
       <div
         className="brand"
-        onClick={() => (isAdmin ? nav('/admin') : nav('/dashboard'))}
+        onClick={() => nav('/dashboard')}
       >
         <img src="/fire.png" alt="logo" />
         <span className="title">
@@ -98,6 +98,7 @@ export default function Header() {
             <div className="dropdown" onClick={(e) => e.stopPropagation()}>
               <Link to="/profile">Profil</Link>
               {isAdmin && <Link to="/admin">Dashboard admin</Link>}
+              <Link to="/dashboard">Gérer mon statut</Link>
               <button onClick={logout}>Déconnexion</button>
             </div>
           )}
