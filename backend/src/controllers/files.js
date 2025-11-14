@@ -1,3 +1,4 @@
+
 const path = require('path');
 const fs = require('fs');
 const { File, User } = require('../../models');
@@ -20,32 +21,33 @@ function supabase() {
  * - Admin/SuperAdmin : voit tout
  * - User : ne voit que ses fichiers
  */
-exports.list = async (req, res) => {
-  const isAdmin = ['admin','super_admin'].includes(req.user.role);
+async function list(req, res) {
+  const isAdmin = ['admin', 'super_admin'].includes(req.user.role);
   const where = isAdmin ? {} : { userId: req.user.id };
 
   const rows = await File.findAll({
     where,
-    include: [{ model: User, as: 'User', attributes: ['id','firstName','lastName'] }],
-    order: [['createdAt','DESC']]
+    include: [{ model: User, as: 'User', attributes: ['id', 'firstName', 'lastName'] }],
+    order: [['createdAt', 'DESC']],
   });
 
-  const data = rows.map(r => ({
+  const data = rows.map((r) => ({
     id: r.id,
     originalName: r.originalName,
     mime: r.mime,
     size: r.size,
     createdAt: r.createdAt,
-    user: r.User ? {
-      id: r.User.id,
-      firstName: r.User.firstName,
-      lastName: r.User.lastName
-    } : null
-    // pas besoin d'URL ici, on passe par /files/:id/url
+    user: r.User
+      ? {
+          id: r.User.id,
+          firstName: r.User.firstName,
+          lastName: r.User.lastName,
+        }
+      : null,
   }));
 
   res.json(data);
-};
+}
 
 /**
  * GET /api/files/inbox
@@ -53,50 +55,48 @@ exports.list = async (req, res) => {
  * - Admin/SuperAdmin : tout
  * - User simple : uniquement ses fichiers
  */
-exports.inbox = async (req, res) => {
-  const isAdmin = ['admin','super_admin'].includes(req.user.role);
+async function inbox(req, res) {
+  const isAdmin = ['admin', 'super_admin'].includes(req.user.role);
   const where = isAdmin ? {} : { userId: req.user.id };
 
   const rows = await File.findAll({
     where,
-    include: [{ model: User, as: 'User', attributes: ['id','firstName','lastName'] }],
-    order: [['createdAt','DESC']]
+    include: [{ model: User, as: 'User', attributes: ['id', 'firstName', 'lastName'] }],
+    order: [['createdAt', 'DESC']],
   });
 
-  const data = rows.map(r => ({
+  const data = rows.map((r) => ({
     id: r.id,
     originalName: r.originalName,
     mime: r.mime,
     size: r.size,
     createdAt: r.createdAt,
-    user: r.User ? {
-      id: r.User.id,
-      firstName: r.User.firstName,
-      lastName: r.User.lastName
-    } : null
+    user: r.User
+      ? {
+          id: r.User.id,
+          firstName: r.User.firstName,
+          lastName: r.User.lastName,
+        }
+      : null,
   }));
 
   res.json(data);
-};
+}
 
 /**
  * GET /api/files/:id/url
  * Retourne une URL directement ouvrable dans un nouvel onglet
- * - local : BASE_URL/uploads/...
- * - supabase : URL signée
  */
-exports.url = async (req, res) => {
+async function url(req, res) {
   const id = parseInt(req.params.id, 10);
   const row = await File.findByPk(id);
   if (!row) return res.status(404).json({ error: 'Fichier introuvable' });
 
-  // stockage local: on pointe vers /uploads/...
   if (DRIVER === 'local') {
-    const url = `${BASE_URL}/uploads/${row.storageKey}`;
-    return res.json({ url });
+    const publicUrl = `${BASE_URL}/uploads/${row.storageKey}`;
+    return res.json({ url: publicUrl });
   }
 
-  // supabase: URL signée
   try {
     const { client, bucket } = supabase();
     const { data, error } = await client.storage
@@ -113,14 +113,12 @@ exports.url = async (req, res) => {
     console.error('SUPABASE URL ERROR', e);
     return res.status(500).json({ error: 'Impossible de générer l’URL' });
   }
-};
+}
 
 /**
  * GET /api/files/:id/download
- * (Optionnel, tu peux maintenant passer uniquement par /url côté front,
- * mais je le laisse si tu en as besoin ailleurs.)
  */
-exports.download = async (req, res) => {
+async function download(req, res) {
   const id = parseInt(req.params.id, 10);
   const row = await File.findByPk(id);
   if (!row) return res.status(404).json({ error: 'Fichier introuvable' });
@@ -145,13 +143,12 @@ exports.download = async (req, res) => {
     console.error('DOWNLOAD ERROR', e);
     return res.status(500).json({ error: 'Téléchargement impossible' });
   }
-};
+}
 
 /**
  * GET /api/files/:id/view
- * Aperçu inline (PDF, image, etc.)
  */
-exports.view = async (req, res) => {
+async function view(req, res) {
   const id = parseInt(req.params.id, 10);
   const row = await File.findByPk(id);
 
@@ -189,12 +186,12 @@ exports.view = async (req, res) => {
     console.error('VIEW ERROR', e);
     return res.status(500).json({ error: 'Aperçu impossible' });
   }
-};
+}
 
 /**
  * DELETE /api/files/:id
  */
-exports.destroy = async (req, res) => {
+async function destroy(req, res) {
   const id = parseInt(req.params.id, 10);
   const row = await File.findByPk(id);
   if (!row) return res.status(404).json({ error: 'Fichier introuvable' });
@@ -213,14 +210,23 @@ exports.destroy = async (req, res) => {
 
   await row.destroy();
   res.json({ ok: true });
-};
+}
 
 /**
  * GET /api/files/export
- * toujours désactivé ici
  */
-exports.exportZip = (req, res) => {
+function exportZip(req, res) {
   return res.status(501).json({
-    error: 'Export ZIP désactivé sur cet hébergement'
+    error: 'Export ZIP désactivé sur cet hébergement',
   });
+}
+
+module.exports = {
+  list,
+  inbox,
+  url,
+  download,
+  view,
+  destroy,
+  exportZip,
 };

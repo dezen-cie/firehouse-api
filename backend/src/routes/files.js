@@ -5,8 +5,9 @@ const r = Router();
 
 r.get('/inbox', ctrl.inbox);
 r.get('/export', ctrl.exportZip);
-r.get('/:id/url', ctrl.publicUrl);
+
 r.get('/', ctrl.list);
+r.get('/:id/url', ctrl.url);   
 r.get('/:id/view', ctrl.view);
 r.get('/:id/download', ctrl.download);
 r.delete('/:id', ctrl.destroy);
