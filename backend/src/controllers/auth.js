@@ -63,17 +63,18 @@ exports.login = async (req,res)=>{
   res.cookie('refreshToken', refreshToken, refreshCookieOptions);
 
   res.json({
-    accessToken,      
-    user: {
-      id:user.id,
-      role:user.role,
-      firstName:user.firstName,
-      lastName:user.lastName,
-      grade:user.grade,
-      avatarUrl: normalizeAvatar(user.avatarUrl),
-      visibleInList:user.visibleInList
-    }
-  });
+  accessToken,
+  user: {
+    id: user.id,
+    role: user.role,
+    firstName: user.firstName,
+    lastName: user.lastName,
+    grade: user.grade,
+    avatarUrl: normalizeAvatar(user.avatarUrl),
+    visibleInList: user.visibleInList,
+  },
+});
+
 };
 
 exports.refresh = async (req, res) => {
@@ -100,7 +101,8 @@ exports.refresh = async (req, res) => {
 
   const accessToken = signAccess(user);
   res.cookie('accessToken', accessToken, accessCookieOptions);
-  return res.json({ ok: true });
+  res.json({ accessToken });
+
 };
 
 
