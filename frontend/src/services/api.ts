@@ -5,7 +5,7 @@ export const api = axios.create({
   withCredentials: true,
 })
 
-// Ajoute le Bearer si on a un token stocké
+// Ajout du Bearer pour toutes les requêtes si on a un token
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('accessToken')
   if (token) {
@@ -20,22 +20,28 @@ api.interceptors.response.use(
   (err) => {
     const cfg = err.config
 
+    // Pas de config ou pas de réponse -> on laisse filer l'erreur brute
     if (!cfg || !err.response) {
       return Promise.reject(err)
     }
 
+    const status = err.response.status
     const url: string = cfg.url || ''
 
-    // on ne fait rien de spécial pour login
+    // On ne touche jamais aux erreurs du login lui-même
     if (url.includes('/auth/login')) {
       return Promise.reject(err)
     }
 
-    // si l’API répond 401 → session morte
-    if (err.response.status === 401) {
+    if (status === 401) {
+      // Session morte -> on nettoie
       localStorage.removeItem('accessToken')
-      // on peut aussi vider d'autres états si tu veux plus tard
-      window.location.href = '/'
+
+      // Surtout ne PAS recharger si on est déjà sur la page de login,
+      // sinon on crée une boucle de refresh.
+      if (window.location.pathname !== '/') {
+        window.location.href = '/'
+      }
     }
 
     return Promise.reject(err)
