@@ -7,18 +7,14 @@ const { z } = require('zod');
 const isProd = process.env.NODE_ENV === 'production';
 const BASE_URL = process.env.BASE_URL || 'http://localhost:4000';
 
-// Normalise l'URL avatar envoyée au front
 function normalizeAvatar(avatarUrl) {
   if (!avatarUrl) return null;
-  // les avatars uploadés : /uploads/...
   if (avatarUrl.startsWith('/uploads/')) {
     return `${BASE_URL}${avatarUrl}`;
   }
-  // les illustrations front : /illu-pompier.png → on laisse tel quel
   return avatarUrl;
 }
 
-// options cookies pour dev / prod
 const accessCookieOptions = {
   httpOnly: false,
   sameSite: isProd ? 'none' : 'lax',
@@ -38,6 +34,7 @@ function signAccess(user){
     { expiresIn: process.env.ACCESS_TOKEN_TTL || '15m' }
   );
 }
+
 function signRefresh(user){
   return jwt.sign(
     { id:user.id },
@@ -66,6 +63,7 @@ exports.login = async (req,res)=>{
   res.cookie('refreshToken', refreshToken, refreshCookieOptions);
 
   res.json({
+    accessToken,      
     user: {
       id:user.id,
       role:user.role,
@@ -93,7 +91,7 @@ exports.refresh = async (req,res)=>{
 
     const accessToken = signAccess(user);
     res.cookie('accessToken', accessToken, accessCookieOptions);
-    res.json({ ok:true });
+    res.json({ ok:true, accessToken });
   }catch(e){
     return res.status(401).json({error:'Invalid token'});
   }

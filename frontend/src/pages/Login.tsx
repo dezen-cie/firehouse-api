@@ -19,7 +19,14 @@ export default function Login(){
     setErr(null)
     try{
       const res = await api.post('/auth/login', { email, password })
+
+      // ⭐ on garde le token en local pour Authorization
+      if (res.data?.accessToken) {
+        localStorage.setItem('accessToken', res.data.accessToken)
+      }
+
       setUser(res.data.user)
+
       const s = connectSocket()
       s?.on('badge:update', async ()=>{
         const r = await api.get('/conversations/unread/count')
@@ -30,17 +37,18 @@ export default function Login(){
         setMessages(r.data.count)
       }catch{}
       setFiles(0)
+
       if(res.data.user.role==='admin' || res.data.user.role==='super_admin') nav('/admin')
       else nav('/dashboard')
     } catch(e:any){
-  console.error('LOGIN ERROR', e)
+      console.error('LOGIN ERROR', e)
 
-  if (!e.response) {
-    setErr('Serveur indisponible ou réponse invalide. Vérifie l’API puis réessaie.')
-  } else {
-    setErr(e.response.data?.error || 'Connexion impossible')
-  }
-}
+      if (!e.response) {
+        setErr('Serveur indisponible ou réponse invalide. Vérifie l’API puis réessaie.')
+      } else {
+        setErr(e.response.data?.error || 'Connexion impossible')
+      }
+    }
   }
 
   return (

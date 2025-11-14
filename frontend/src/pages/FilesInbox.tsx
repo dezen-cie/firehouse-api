@@ -3,7 +3,7 @@ import AdminTabs from '../components/AdminTabs'
 import './FilesInbox.scss'
 import { useEffect, useState } from 'react'
 import { api } from '../services/api'
-import { useBadges } from '../store/useBadges'   
+import { useBadges } from '../store/useBadges'
 
 type FileRow = {
   id: number
@@ -17,11 +17,13 @@ type FileRow = {
 
 export default function FilesInbox(){
   const [files, setFiles] = useState<FileRow[]>([])
-  const { setFiles: setFileBadge } = useBadges()   
+  const { setFiles: setFileBadge } = useBadges()
+
   async function load(){
     const r = await api.get('/files/inbox')
     setFiles(r.data)
   }
+
   useEffect(()=>{ load() },[])
 
   function exportZip(){
@@ -29,22 +31,34 @@ export default function FilesInbox(){
     window.location.href = `${base}/files/export`
   }
 
-  // utilitaire: quand l'admin agit sur un fichier, on enlève 1 notif localement
   function clearFileBadgeOnce(){
     setFileBadge((p:number)=> Math.max(0, p-1))
   }
 
-  function view(id:number){
-    const base = (import.meta.env.VITE_API_BASE || 'http://localhost:4000/api')
-    // nouvelle route inline
-    window.open(`${base}/files/${id}/view`, '_blank', 'noopener')
-    clearFileBadgeOnce()
+  async function view(id:number){
+    try{
+      const r = await api.get(`/files/${id}/url`)
+      const url: string = r.data.url
+      if (url) {
+        window.open(url, '_blank')
+        clearFileBadgeOnce()
+      }
+    }catch(e){
+      console.error('VIEW FILE ERROR', e)
+    }
   }
 
-  function dl(id:number){
-    const base = (import.meta.env.VITE_API_BASE || 'http://localhost:4000/api')
-    window.location.href = `${base}/files/${id}/download`
-    clearFileBadgeOnce()
+  async function dl(id:number){
+    try{
+      const r = await api.get(`/files/${id}/url`)
+      const url: string = r.data.url
+      if (url) {
+        window.open(url, '_blank') 
+        clearFileBadgeOnce()
+      }
+    }catch(e){
+      console.error('DOWNLOAD FILE ERROR', e)
+    }
   }
 
   async function del(id:number){

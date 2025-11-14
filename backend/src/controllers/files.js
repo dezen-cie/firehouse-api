@@ -185,3 +185,46 @@ exports.exportZip = (req, res) => {
     error: 'Export ZIP désactivé sur cet hébergement'
   });
 };
+
+
+/**
+ * GET /api/files/:id/url
+ * Retourne une URL "publique" (locale ou Supabase) pour visualiser/télécharger le fichier.
+ * Cette route est protégée (auth + admin) mais l'URL retournée ne l'est pas.
+ */
+exports.publicUrl = async (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  const row = await File.findByPk(id);
+
+  if (!row) {
+    return res.status(404).json({ error: 'Fichier introuvable' });
+  }
+
+  // stockage local : on renvoie simplement /uploads/...
+  if (DRIVER === 'local') {
+    return res.json({
+      url: `/uploads/${row.storageKey}`,
+      filename: row.originalName,
+      mime: row.mime,
+    });
+  }
+
+  // stockage Supabase : on génère une URL signée courte durée
+  try {
+    const { client, bucket } = supabase();
+    const { data, error } = await client.storage
+      .from(bucket)
+      .createSignedUrl(row.storageKey, 60); // 60 secondes
+
+    if (error) throw error;
+
+    return res.json({
+      url: data.signedUrl,
+      filename: row.originalName,
+      mime: row.mime,
+    });
+  } catch (e) {
+    console.error('publicUrl error', e);
+    return res.status(500).json({ error: 'Impossible de générer une URL de fichier' });
+  }
+};

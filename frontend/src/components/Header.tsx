@@ -8,12 +8,6 @@ import { api } from '../services/api';
 import { connectSocket, reconnectSocketAuth } from '../services/socket';
 import Flash from '../components/Flash';
 
-/**
- * Header principal de l'application.
- * - Affiche l'identité de l'utilisateur.
- * - Gère les badges (messages, fichiers) et la connexion socket.
- * - Propose l'accès au profil, à l'admin et à la déconnexion.
- */
 export default function Header() {
   const { user, clear } = useUser();
   const { messages, files, setMessages } = useBadges();
@@ -22,9 +16,6 @@ export default function Header() {
   const nav = useNavigate();
   const isAdmin = user?.role === 'admin' || user?.role === 'super_admin';
 
-  /**
-   * Initialise le socket et synchronise le compteur de messages non lus.
-   */
   useEffect(() => {
     let mounted = true;
 
@@ -55,15 +46,14 @@ export default function Header() {
     };
   }, [setMessages]);
 
-  /**
-   * Déconnecte l'utilisateur et réinitialise la session socket.
-   */
   async function logout() {
     try {
       await api.post('/auth/logout');
     } catch {
-      // on ignore les erreurs de déconnexion côté API
+      // ignore
     }
+    
+    localStorage.removeItem('accessToken');
 
     clear();
     reconnectSocketAuth();
