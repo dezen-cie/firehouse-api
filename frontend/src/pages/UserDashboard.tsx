@@ -6,96 +6,103 @@ import { api } from '../services/api'
 import { useUser } from '../store/useUser'
 import { Clock } from 'lucide-react'
 
-type Status = 'AVAILABLE'|'INTERVENTION'|'UNAVAILABLE'|'ABSENT'
+type Status = 'AVAILABLE' | 'INTERVENTION' | 'UNAVAILABLE' | 'ABSENT'
 
-export default function UserDashboard(){
+export default function UserDashboard() {
   const { user } = useUser()
+
   const [currentStatus, setCurrentStatus] = useState<Status | null>(null)
   const [selectedStatus, setSelectedStatus] = useState<Status | null>(null)
   const [comment, setComment] = useState('')
   const [returnAt, setReturnAt] = useState<string>('')          
-  const [file, setFile] = useState<File|null>(null)
-  const [flash, setFlash] = useState<string|null>(null)
-  const flashTimer = useRef<number|null>(null)
+  const [file, setFile] = useState<File | null>(null)
+  const [flash, setFlash] = useState<string | null>(null)
 
+  const flashTimer = useRef<number | null>(null)
   const returnInputRef = useRef<HTMLInputElement | null>(null)
 
   const effectiveStatus: Status | null = selectedStatus ?? currentStatus
 
-  const isReturnEnabled = effectiveStatus === 'UNAVAILABLE' || effectiveStatus === 'ABSENT'
+  const isReturnEnabled   = effectiveStatus === 'UNAVAILABLE' || effectiveStatus === 'ABSENT'
   const isCommentEnabled  = effectiveStatus === 'UNAVAILABLE' || effectiveStatus === 'ABSENT'
+
   const hasStatusChange = selectedStatus !== null
-  const hasComment = comment.trim().length > 0
-  const hasReturn = isReturnEnabled && !!returnAt
-  const hasFile = !!file
+  const hasComment      = isCommentEnabled && comment.trim().length > 0
+  const hasReturn       = isReturnEnabled && !!returnAt
+  const hasFile         = !!file
 
   const canSubmit = hasStatusChange || hasComment || hasReturn || hasFile
 
-  useEffect(()=>{
+  useEffect(() => {
     let mounted = true
 
-    async function loadCurrent(){
-      try{
+    async function loadCurrent() {
+      try {
         const r = await api.get('/status/current')
         const s = r.data?.status as Status | null
-        if(!mounted) return
-        if(s){
+        if (!mounted) return
+        if (s) {
           setCurrentStatus(s)
         }
-      }catch(e){
-        // on ignore l’erreur
+      } catch {
+        // silencieux
       }
     }
 
     loadCurrent()
 
-    return ()=>{
+    return () => {
       mounted = false
-      if(flashTimer.current) window.clearTimeout(flashTimer.current)
+      if (flashTimer.current) window.clearTimeout(flashTimer.current)
     }
-  },[])
+  }, [])
 
-  function pickAvatar(){
+  function pickAvatar() {
     const input = document.createElement('input')
-    input.type='file'
-    input.accept='image/*'
-    input.onchange = async ()=>{
-      if(!input.files?.[0]) return
+    input.type = 'file'
+    input.accept = 'image/*'
+    input.onchange = async () => {
+      if (!input.files?.[0]) return
       const fd = new FormData()
       fd.append('avatar', input.files[0])
       const r = await api.put('/me/avatar', fd)
       const img = document.querySelector('.portrait') as HTMLImageElement | null
-      if(img) img.src = r.data.avatarUrl
+      if (img) img.src = r.data.avatarUrl
     }
     input.click()
   }
 
-  async function submit(){
+  async function submit() {
     const fd = new FormData()
     let has = false
 
-    if(hasStatusChange && selectedStatus){
+    if (hasStatusChange && selectedStatus) {
       fd.append('status', selectedStatus as Status)
       has = true
     }
-     if (hasComment && isCommentEnabled) {
+
+    if (hasComment) {
       fd.append('comment', comment)
       has = true
     }
-    if(hasReturn){
+
+    if (hasReturn) {
       fd.append('returnAt', new Date(returnAt).toISOString())
       has = true
     }
-    if(hasFile && file){
+
+    if (hasFile && file) {
       fd.append('file', file)
       has = true
     }
 
     if (!has) return
 
-    await api.post('/status', fd, { headers: { 'Content-Type': 'multipart/form-data' } })
+    await api.post('/status', fd, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    })
 
-    if(selectedStatus){
+    if (selectedStatus) {
       setCurrentStatus(selectedStatus)
     }
 
@@ -106,21 +113,23 @@ export default function UserDashboard(){
 
     setFlash('Statut mis à jour')
     if (flashTimer.current) window.clearTimeout(flashTimer.current)
-    flashTimer.current = window.setTimeout(()=> setFlash(null), 3000)
+    flashTimer.current = window.setTimeout(() => setFlash(null), 3000)
   }
 
-  function choose(status: Status){
+  function choose(status: Status) {
     setSelectedStatus(status)
-    if(status === 'AVAILABLE' || status === 'INTERVENTION'){
+
+    // si dispo / intervention → on reset retour et commentaire
+    if (status === 'AVAILABLE' || status === 'INTERVENTION') {
       setReturnAt('')
       setComment('')
     }
   }
 
-  function openReturnPicker(){
-    if(!isReturnEnabled) return
+  function openReturnPicker() {
+    if (!isReturnEnabled) return
     const input = returnInputRef.current
-    if(!input) return
+    if (!input) return
 
     // navigateurs récents
     // @ts-ignore
@@ -132,13 +141,13 @@ export default function UserDashboard(){
     }
   }
 
-  function clearReturn(){
+  function clearReturn() {
     setReturnAt('')
   }
 
   return (
     <div className="user-dash">
-      <Header/>
+      <Header />
       <div className="content">
 
         {flash && <div className="flash flash--success">{flash}</div>}
@@ -148,7 +157,7 @@ export default function UserDashboard(){
             src={user?.avatarUrl || '/illu-pompier.png'}
             className="portrait"
             onClick={pickAvatar}
-            onError={(e)=>{ (e.currentTarget as HTMLImageElement).src='/illu-pompier.png' }}
+            onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/illu-pompier.png' }}
           />
           <div className="name">{user?.firstName} {user?.lastName}</div>
           <div className="grade">{user?.grade || '—'}</div>
@@ -159,28 +168,27 @@ export default function UserDashboard(){
             label="Disponible"
             color="#39AE93"
             active={effectiveStatus === 'AVAILABLE'}
-            onClick={()=>choose('AVAILABLE')}
+            onClick={() => choose('AVAILABLE')}
           />
           <StatusButton
             label="Intervention"
             color="#F16D3F"
             active={effectiveStatus === 'INTERVENTION'}
-            onClick={()=>choose('INTERVENTION')}
+            onClick={() => choose('INTERVENTION')}
           />
           <StatusButton
             label="Indisponible"
             color="#FEC33D"
             active={effectiveStatus === 'UNAVAILABLE'}
-            onClick={()=>choose('UNAVAILABLE')}
+            onClick={() => choose('UNAVAILABLE')}
           />
           <StatusButton
             label="Absent"
             color="#A4A4A4"
             active={effectiveStatus === 'ABSENT'}
-            onClick={()=>choose('ABSENT')}
+            onClick={() => choose('ABSENT')}
           />
         </div>
-
 
         <div className="return-row">
           <label>De retour à</label>
@@ -198,7 +206,7 @@ export default function UserDashboard(){
               className="return-input"
               type="datetime-local"
               value={returnAt}
-              onChange={e=>setReturnAt(e.target.value)}
+              onChange={e => setReturnAt(e.target.value)}
               disabled={!isReturnEnabled}
             />
 
@@ -217,14 +225,18 @@ export default function UserDashboard(){
 
         <label>Commentaire</label>
         <input
-          placeholder={isCommentEnabled ? "Message pour l’administration" : "Disponible uniquement si vous êtes indisponible/absent"}
+          placeholder={
+            isCommentEnabled
+              ? 'Message pour l’administration'
+              : 'Disponible uniquement si vous êtes indisponible/absent'
+          }
           value={comment}
-          onChange={e=>setComment(e.target.value)}
+          onChange={e => setComment(e.target.value)}
           disabled={!isCommentEnabled}
         />
 
         <label>Envoyer un fichier</label>
-        <input type="file" onChange={e=>setFile(e.target.files?.[0]||null)} />
+        <input type="file" onChange={e => setFile(e.target.files?.[0] || null)} />
 
         <button className="cta" onClick={submit} disabled={!canSubmit}>
           Mettre à jour mon statut
