@@ -7,12 +7,16 @@ let socket: Socket | null = null;
 export function connectSocket() {
   if (socket) return socket;
 
+  const token = localStorage.getItem('accessToken') || undefined;
+
   socket = io(import.meta.env.VITE_API_WS || 'http://localhost:4000', {
     withCredentials: true,
     autoConnect: true,
     reconnection: true,
     reconnectionAttempts: Infinity,
     reconnectionDelayMax: 4000,
+    auth: { token },          
+    transports: ['websocket', 'polling'],
   });
 
   const { setMessages, setFiles } = useBadges.getState();
@@ -30,7 +34,15 @@ export function connectSocket() {
 }
 
 export function reconnectSocketAuth() {
-  if (!socket) return connectSocket();
+  const token = localStorage.getItem('accessToken') || undefined;
+
+  if (!socket) {
+    return connectSocket();
+  }
+
+  // met à jour le token pour les reconnexions (refresh token, login/logout)
+  (socket as any).auth = { ...(socket as any).auth, token };
+
   if (!socket.active) socket.connect();
   return socket;
 }
