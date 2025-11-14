@@ -181,13 +181,6 @@ export default function UserDashboard(){
           />
         </div>
 
-        <label>Commentaire</label>
-        <input
-          placeholder={isCommentEnabled ? "Message pour l’administration" : "Disponible uniquement si vous êtes indisponible/absent"}
-          value={comment}
-          onChange={e=>setComment(e.target.value)}
-          disabled={!isCommentEnabled}
-        />
 
         <div className="return-row">
           <label>De retour à</label>
@@ -221,6 +214,14 @@ export default function UserDashboard(){
             )}
           </div>
         </div>
+
+        <label>Commentaire</label>
+        <input
+          placeholder={isCommentEnabled ? "Message pour l’administration" : "Disponible uniquement si vous êtes indisponible/absent"}
+          value={comment}
+          onChange={e=>setComment(e.target.value)}
+          disabled={!isCommentEnabled}
+        />
 
         <label>Envoyer un fichier</label>
         <input type="file" onChange={e=>setFile(e.target.files?.[0]||null)} />
