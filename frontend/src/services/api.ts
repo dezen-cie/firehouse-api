@@ -5,7 +5,7 @@ export const api = axios.create({
   withCredentials: true,
 })
 
-// ajoute le Bearer si on a un token stocké
+// Ajoute le Bearer si on a un token stocké
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('accessToken')
   if (token) {
@@ -17,7 +17,7 @@ api.interceptors.request.use((config) => {
 
 api.interceptors.response.use(
   (r) => r,
-  async (err) => {
+  (err) => {
     const cfg = err.config
 
     if (!cfg || !err.response) {
@@ -26,29 +26,16 @@ api.interceptors.response.use(
 
     const url: string = cfg.url || ''
 
-    // on ne tente pas de refresh sur login / refresh eux-mêmes
-    if (url.includes('/auth/login') || url.includes('/auth/refresh')) {
+    // on ne fait rien de spécial pour login
+    if (url.includes('/auth/login')) {
       return Promise.reject(err)
     }
 
-    if (err.response.status === 401 && !cfg._retry) {
-      cfg._retry = true
-      try {
-        const r = await api.post('/auth/refresh')
-        if (r.data?.accessToken) {
-          localStorage.setItem('accessToken', r.data.accessToken)
-        } else {
-          // pas de token dans la réponse => session morte
-          localStorage.removeItem('accessToken')
-          window.location.href = '/'
-          return Promise.reject(err)
-        }
-        return api.request(cfg)
-      } catch (e) {
-        localStorage.removeItem('accessToken')
-        window.location.href = '/'
-        return Promise.reject(e)
-      }
+    // si l’API répond 401 → session morte
+    if (err.response.status === 401) {
+      localStorage.removeItem('accessToken')
+      // on peut aussi vider d'autres états si tu veux plus tard
+      window.location.href = '/'
     }
 
     return Promise.reject(err)
