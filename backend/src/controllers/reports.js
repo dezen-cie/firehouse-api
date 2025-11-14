@@ -30,20 +30,39 @@ exports.daily = async (req, res) => {
     order: [['createdAt', 'DESC']],
   });
 
-  const buckets = {};
-  for (let h = 0; h < 24; h += 1) {
-    buckets[h] = {
-      AVAILABLE: 0,
-      INTERVENTION: 0,
-      UNAVAILABLE: 0,
-      ABSENT: 0,
-    };
-  }
+  
+const buckets = {};
+for (let h = 0; h < 24; h++) {
+  buckets[h] = {
+    AVAILABLE: 0,
+    INTERVENTION: 0,
+    UNAVAILABLE: 0,
+    ABSENT: 0,
+  };
+}
 
-  for (const it of items) {
-    const hour = new Date(it.createdAt).getHours();
-    buckets[hour][it.status] += 1;
+
+const perHour = {}; 
+
+for (const it of items) {
+  const hour = new Date(it.createdAt).getHours();
+  if (!perHour[hour]) perHour[hour] = {};
+  const u = it.userId;
+
+  
+  if (!perHour[hour][u] ||
+      new Date(it.createdAt) > new Date(perHour[hour][u].createdAt)) {
+    perHour[hour][u] = it;
   }
+}
+
+
+for (const hour in perHour) {
+  for (const u in perHour[hour]) {
+    const st = perHour[hour][u].status;
+    buckets[hour][st] += 1;
+  }
+}
 
   const latestByUser = new Map();
   for (const it of items) {

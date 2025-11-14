@@ -1,6 +1,9 @@
 @use '../styles/variables' as *;
+
 .user-dash{
-  .content{ padding:16px;
+  .content{ 
+    padding:16px;
+
     .flash{
       width: 100%;
       position: sticky;
@@ -19,15 +22,110 @@
       }
     }
 
-    .profile{ text-align:center;
+    .profile{ 
+      text-align:center;
       .portrait{ width:200px; height:200px; object-fit:cover; border-radius:8px; display:block; margin:16px auto 8px; cursor:pointer }
       .name{ font-size:24px; font-weight:600 }
       .grade{ color:#666 }
     }
-    .grid{ display:grid; grid-template-columns:1fr 1fr; gap:12px; margin:16px 0 8px }
-    label{ display:block; margin:10px 0 6px }
-    input[type='text'], input[type='datetime-local'], input[type='file'], input:not([type]){ width:100%; padding:12px; border:1px solid #e5e5e5; border-radius:12px }
-    .cta{ margin:18px 0; width:100%; padding:14px; background:$color-primary; color:#fff; border:0; border-radius:12px; font-weight:600 }
-    .ok{ color:#2a7; margin-top:6px }
+
+    .grid{ 
+      display:grid; 
+      grid-template-columns:1fr 1fr; 
+      gap:12px; 
+      margin:16px 0 8px 
+    }
+
+    label{ 
+      display:block; 
+      margin:10px 0 6px 
+    }
+
+    input[type='text'],
+    input[type='datetime-local'],
+    input[type='file'],
+    input:not([type]){
+      width:100%;
+      padding:12px;
+      border:1px solid #e5e5e5;
+      border-radius:12px;
+    }
+
+    /* ---- ligne "De retour à" ---- */
+
+    .return-row{
+      margin: 10px 0 6px;
+
+      label{
+        margin-bottom: 6px;
+      }
+
+      .return-controls{
+        display:flex;
+        align-items:center;
+        gap:8px;
+      }
+
+      .return-trigger{
+        display:inline-flex;
+        align-items:center;
+        justify-content:center;
+        width:40px;
+        height:40px;
+        border-radius:999px;
+        border:1px solid #e0e0e0;
+        background:#fff;
+        box-shadow: $shadow;
+        cursor:pointer;
+
+        svg{
+          width:20px;
+          height:20px;
+        }
+
+        &:hover{
+          border-color: $color-primary;
+        }
+
+        &.return-trigger--disabled{
+          opacity:.4;
+          box-shadow:none;
+          cursor:default;
+        }
+      }
+
+      .return-input{
+        flex:1;
+        padding:10px;
+        border-radius:10px;
+        border:1px solid #e5e5e5;
+        font-size:14px;
+      }
+
+      .return-clear{
+        border:0;
+        background:transparent;
+        cursor:pointer;
+        font-size:16px;
+        line-height:1;
+        padding:4px;
+      }
+    }
+
+    .cta{ 
+      margin:18px 0; 
+      width:100%; 
+      padding:14px; 
+      background:$color-primary; 
+      color:#fff; 
+      border:0; 
+      border-radius:12px; 
+      font-weight:600 
+    }
+
+    .ok{ 
+      color:#2a7; 
+      margin-top:6px 
+    }
   }
 }

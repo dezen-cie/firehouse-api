@@ -4,6 +4,7 @@ import './UserDashboard.scss'
 import { useEffect, useRef, useState } from 'react'
 import { api } from '../services/api'
 import { useUser } from '../store/useUser'
+import { Clock } from 'lucide-react'
 
 type Status = 'AVAILABLE'|'INTERVENTION'|'UNAVAILABLE'|'ABSENT'
 
@@ -16,6 +17,8 @@ export default function UserDashboard(){
   const [file, setFile] = useState<File|null>(null)
   const [flash, setFlash] = useState<string|null>(null)
   const flashTimer = useRef<number|null>(null)
+
+  const returnInputRef = useRef<HTMLInputElement | null>(null)
 
   const effectiveStatus: Status | null = selectedStatus ?? currentStatus
 
@@ -39,6 +42,7 @@ export default function UserDashboard(){
           setCurrentStatus(s)
         }
       }catch(e){
+        // on ignore l’erreur
       }
     }
 
@@ -111,6 +115,25 @@ export default function UserDashboard(){
     }
   }
 
+  function openReturnPicker(){
+    if(!isReturnEnabled) return
+    const input = returnInputRef.current
+    if(!input) return
+
+    // navigateurs récents
+    // @ts-ignore
+    if (typeof input.showPicker === 'function') {
+      // @ts-ignore
+      input.showPicker()
+    } else {
+      input.focus()
+    }
+  }
+
+  function clearReturn(){
+    setReturnAt('')
+  }
+
   return (
     <div className="user-dash">
       <Header/>
@@ -163,13 +186,38 @@ export default function UserDashboard(){
           onChange={e=>setComment(e.target.value)}
         />
 
-        <label>Retour prévu</label>
-        <input
-          type="datetime-local"
-          value={returnAt}
-          onChange={e=>setReturnAt(e.target.value)}
-          disabled={!isReturnEnabled}
-        />
+        <div className="return-row">
+          <label>De retour à</label>
+          <div className="return-controls">
+            <button
+              type="button"
+              className={`return-trigger${!isReturnEnabled ? ' return-trigger--disabled' : ''}`}
+              onClick={openReturnPicker}
+            >
+              <Clock size={20} />
+            </button>
+
+            <input
+              ref={returnInputRef}
+              className="return-input"
+              type="datetime-local"
+              value={returnAt}
+              onChange={e=>setReturnAt(e.target.value)}
+              disabled={!isReturnEnabled}
+            />
+
+            {returnAt && (
+              <button
+                type="button"
+                className="return-clear"
+                onClick={clearReturn}
+                aria-label="Effacer l’heure de retour"
+              >
+                ✕
+              </button>
+            )}
+          </div>
+        </div>
 
         <label>Envoyer un fichier</label>
         <input type="file" onChange={e=>setFile(e.target.files?.[0]||null)} />
