@@ -66,22 +66,22 @@ exports.update = async (req, res) => {
  */
 exports.avatar = async (req, res) => {
   const user = await User.findByPk(req.user.id);
-  if (!user) return res.status(404).json({ error: 'Introuvable' });
 
-  // suppression de l'ancien fichier local/supabase si c'était un upload
+  // supprime l'ancien avatar si c'était un fichier local
   if (user.avatarUrl && user.avatarUrl.startsWith('/uploads/')) {
     try {
       await remove(user.avatarUrl.replace('/uploads/', ''));
     } catch (e) {
-      // on ignore les erreurs de suppression d'un ancien fichier
+      // on ignore
     }
   }
 
   const stored = await save(req.file, 'avatars');
-  const newPath = `/uploads/${stored.storageKey}`;
 
-  await user.update({ avatarUrl: newPath });
+  // construit une URL publique en fonction du driver (local ou supabase)
+  const avatarUrl = publicUrl(stored.storageKey);
 
-  const publicUrl = normalizeAvatar(newPath);
-  return res.json({ avatarUrl: publicUrl });
+  await user.update({ avatarUrl });
+
+  return res.json({ avatarUrl });
 };

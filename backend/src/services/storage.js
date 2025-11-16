@@ -7,10 +7,7 @@ const { createClient } = require('@supabase/supabase-js');
 const DRIVER = process.env.STORAGE_DRIVER || 'local';
 const ROOT = path.join(process.cwd(), 'uploads');
 
-// Création récursive du dossier si besoin
-function ensureDir(p) {
-  if (!fs.existsSync(p)) fs.mkdirSync(p, { recursive: true });
-}
+function ensureDir(p){ if(!fs.existsSync(p)) fs.mkdirSync(p, { recursive: true }); }
 
 // map mimetype -> extension sûre (pour images sans extension ou exotiques)
 function extFromMime(mime) {
@@ -34,89 +31,75 @@ function normalizeExt(origName, mime) {
   return ext;
 }
 
-/**
- * Stockage local (dev / éventuellement prod si disque persistant).
- */
-async function saveLocal(file, folder) {
+// -------- LOCAL --------
+async function saveLocal(file, folder){
   ensureDir(path.join(ROOT, folder));
   const ext = normalizeExt(file.originalname, file.mimetype);
   const name = uuid() + ext;
   const dest = path.join(ROOT, folder, name);
 
-  // déplace (au lieu de copier) pour éviter les fichiers tmp qui trainent
   await fs.promises.rename(file.path, dest);
-
-  // storageKey POSIX (slashs) pour la cohérence
   return { storageKey: `${folder}/${name}` };
 }
 
-async function removeLocal(key) {
+async function removeLocal(key){
   const dest = path.join(ROOT, key);
-  if (fs.existsSync(dest)) fs.unlinkSync(dest);
+  if(fs.existsSync(dest)) fs.unlinkSync(dest);
 }
 
-/**
- * Client Supabase
- */
-function supabase() {
+// -------- SUPABASE --------
+function supabase(){
   const url = process.env.SUPABASE_URL;
   const key = process.env.SUPABASE_KEY;
   const bucket = process.env.SUPABASE_BUCKET || 'firehouse';
-
-  if (!url || !key) {
-    throw new Error('SUPABASE_URL ou SUPABASE_KEY manquant dans les variables d’environnement');
+  if(!url || !key){
+    throw new Error('Supabase non configuré (SUPABASE_URL / SUPABASE_KEY)');
   }
-
   const client = createClient(url, key);
   return { client, bucket };
 }
 
-/**
- * Stockage Supabase (prod recommandée)
- */
-async function saveSupabase(file, folder) {
+async function saveSupabase(file, folder){
   const { client, bucket } = supabase();
   const ext = normalizeExt(file.originalname, file.mimetype);
   const name = `${folder}/${uuid()}${ext}`;
   const buf = fs.readFileSync(file.path);
 
-  try {
-    const { error } = await client.storage
-      .from(bucket)
-      .upload(name, buf, {
-        upsert: false,
-        contentType: file.mimetype || 'image/jpeg',
-      });
-
-    if (error) throw error;
-
-    return { storageKey: name };
-  } finally {
-    // on supprime le fichier tmp multer quoi qu’il arrive
-    try {
-      if (file.path && fs.existsSync(file.path)) {
-        await fs.promises.unlink(file.path);
-      }
-    } catch {
-      // on ne casse pas l’API pour un échec de cleanup
-    }
-  }
+  const { error } = await client.storage.from(bucket).upload(name, buf, {
+    upsert: false,
+    contentType: file.mimetype || 'image/jpeg'
+  });
+  if(error) throw error;
+  return { storageKey: name };
 }
 
-async function removeSupabase(key) {
+async function removeSupabase(key){
   const { client, bucket } = supabase();
   await client.storage.from(bucket).remove([key]);
 }
 
-/**
- * API unifiée
- */
-async function save(file, folder = 'files') {
+// -------- CHOIX DRIVER --------
+async function save(file, folder='files'){
   return DRIVER === 'supabase' ? saveSupabase(file, folder) : saveLocal(file, folder);
 }
 
-async function remove(key) {
+async function remove(key){
   return DRIVER === 'supabase' ? removeSupabase(key) : removeLocal(key);
 }
 
-module.exports = { save, remove };
+// -------- URL PUBLIQUE --------
+// pour les avatars & éventuellement les fichiers si on veut afficher direct
+function publicUrl(key){
+  if (!key) return null;
+
+  if (DRIVER === 'supabase') {
+    const { client, bucket } = supabase();
+    const { data } = client.storage.from(bucket).getPublicUrl(key);
+    return data.publicUrl;
+  }
+
+  // mode local : on garde l'ancienne logique
+  return `/uploads/${key}`;
+}
+
+module.exports = { save, remove, publicUrl };
