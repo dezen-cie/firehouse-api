@@ -1,4 +1,4 @@
-// backend/src/services/storage.js
+// src/services/storage.js
 const fs = require('fs');
 const path = require('path');
 const { v4: uuid } = require('uuid');
@@ -7,9 +7,12 @@ const { createClient } = require('@supabase/supabase-js');
 const DRIVER = process.env.STORAGE_DRIVER || 'local';
 const ROOT = path.join(process.cwd(), 'uploads');
 
-function ensureDir(p){ if(!fs.existsSync(p)) fs.mkdirSync(p, { recursive: true }); }
+// -- utilitaires extensions / dossiers --
 
-// map mimetype -> extension sûre (pour images sans extension ou exotiques)
+function ensureDir(p) {
+  if (!fs.existsSync(p)) fs.mkdirSync(p, { recursive: true });
+}
+
 function extFromMime(mime) {
   if (!mime) return '.jpg';
   const m = mime.toLowerCase();
@@ -18,11 +21,9 @@ function extFromMime(mime) {
   if (m.includes('png')) return '.png';
   if (m.includes('webp')) return '.webp';
   if (m.includes('gif')) return '.gif';
-  // HEIC/HEIF et autres → on force .jpg
   return '.jpg';
 }
 
-// nettoie/normalise l’extension (force un point, lowercase, remplace .heic en .jpg)
 function normalizeExt(origName, mime) {
   let ext = (path.extname(origName || '') || '').toLowerCase();
   if (!ext) ext = extFromMime(mime);
@@ -31,8 +32,9 @@ function normalizeExt(origName, mime) {
   return ext;
 }
 
-// -------- LOCAL --------
-async function saveLocal(file, folder){
+// -- LOCAL --
+
+async function saveLocal(file, folder) {
   ensureDir(path.join(ROOT, folder));
   const ext = normalizeExt(file.originalname, file.mimetype);
   const name = uuid() + ext;
@@ -42,63 +44,87 @@ async function saveLocal(file, folder){
   return { storageKey: `${folder}/${name}` };
 }
 
-async function removeLocal(key){
+async function removeLocal(key) {
   const dest = path.join(ROOT, key);
-  if(fs.existsSync(dest)) fs.unlinkSync(dest);
+  if (fs.existsSync(dest)) fs.unlinkSync(dest);
 }
 
-// -------- SUPABASE --------
-function supabase(){
+// -- SUPABASE --
+
+function supabase() {
   const url = process.env.SUPABASE_URL;
   const key = process.env.SUPABASE_KEY;
   const bucket = process.env.SUPABASE_BUCKET || 'firehouse';
-  if(!url || !key){
-    throw new Error('Supabase non configuré (SUPABASE_URL / SUPABASE_KEY)');
+
+  if (!url || !key) {
+    console.error(
+      'Supabase non configuré : SUPABASE_URL ou SUPABASE_KEY manquants. ' +
+      'STORAGE_DRIVER =', DRIVER
+    );
+    return null;
   }
+
   const client = createClient(url, key);
   return { client, bucket };
 }
 
-async function saveSupabase(file, folder){
-  const { client, bucket } = supabase();
+async function saveSupabase(file, folder) {
+  const ctx = supabase();
+  if (!ctx) {
+    throw new Error('Supabase non configuré (saveSupabase)');
+  }
+  const { client, bucket } = ctx;
+
   const ext = normalizeExt(file.originalname, file.mimetype);
   const name = `${folder}/${uuid()}${ext}`;
   const buf = fs.readFileSync(file.path);
 
   const { error } = await client.storage.from(bucket).upload(name, buf, {
     upsert: false,
-    contentType: file.mimetype || 'image/jpeg'
+    contentType: file.mimetype || 'image/jpeg',
   });
-  if(error) throw error;
+  if (error) throw error;
+
   return { storageKey: name };
 }
 
-async function removeSupabase(key){
-  const { client, bucket } = supabase();
+async function removeSupabase(key) {
+  const ctx = supabase();
+  if (!ctx) return;
+  const { client, bucket } = ctx;
   await client.storage.from(bucket).remove([key]);
 }
 
-// -------- CHOIX DRIVER --------
-async function save(file, folder='files'){
-  return DRIVER === 'supabase' ? saveSupabase(file, folder) : saveLocal(file, folder);
+// -- API publique --
+
+async function save(file, folder = 'files') {
+  return DRIVER === 'supabase'
+    ? saveSupabase(file, folder)
+    : saveLocal(file, folder);
 }
 
-async function remove(key){
-  return DRIVER === 'supabase' ? removeSupabase(key) : removeLocal(key);
+async function remove(key) {
+  return DRIVER === 'supabase'
+    ? removeSupabase(key)
+    : removeLocal(key);
 }
 
-// -------- URL PUBLIQUE --------
-// pour les avatars & éventuellement les fichiers si on veut afficher direct
-function publicUrl(key){
+// URL publique pour affichage avatar / fichiers
+function publicUrl(key) {
   if (!key) return null;
 
   if (DRIVER === 'supabase') {
-    const { client, bucket } = supabase();
+    const ctx = supabase();
+    if (!ctx) {
+      // fallback dégradé, mais au moins ça ne crash pas
+      return `/uploads/${key}`;
+    }
+    const { client, bucket } = ctx;
     const { data } = client.storage.from(bucket).getPublicUrl(key);
     return data.publicUrl;
   }
 
-  // mode local : on garde l'ancienne logique
+  // mode local
   return `/uploads/${key}`;
 }
 

@@ -1,17 +1,8 @@
+// src/controllers/me.js
 const { User } = require('../../models');
 const multer = require('multer');
 const path = require('path');
-const { save, remove } = require('../services/storage');
-
-const BASE_URL = process.env.BASE_URL || 'http://localhost:4000';
-
-function normalizeAvatar(avatarUrl) {
-  if (!avatarUrl) return null;
-  if (avatarUrl.startsWith('/uploads/')) {
-    return `${BASE_URL}${avatarUrl}`;
-  }
-  return avatarUrl;
-}
+const { save, remove, publicUrl } = require('../services/storage');
 
 const upload = multer({
   dest: path.join(process.cwd(), 'uploads', 'tmp'),
@@ -20,68 +11,43 @@ const upload = multer({
   },
 });
 
-/**
- * Middleware d'upload pour l'avatar utilisateur.
- */
+// middleware pour route avatar
 exports.uploadAvatarMiddleware = upload.single('avatar');
 
-/**
- * Retourne le profil complet de l'utilisateur connecté.
- */
+// GET /api/me
 exports.get = async (req, res) => {
   const user = await User.findByPk(req.user.id);
-  if (!user) return res.status(404).json({ error: 'Introuvable' });
-
-  const plain = user.toJSON();
-  plain.avatarUrl = normalizeAvatar(plain.avatarUrl);
-
-  return res.json(plain);
+  res.json(user);
 };
 
-/**
- * Met à jour les informations de profil de l'utilisateur connecté.
- * L'email ne peut pas être modifié via cette route.
- */
+// PATCH /api/me
 exports.update = async (req, res) => {
   const payload = { ...req.body };
-
-  if (payload.email) {
-    delete payload.email;
-  }
+  if (payload.email) delete payload.email;
 
   const user = await User.findByPk(req.user.id);
-  if (!user) return res.status(404).json({ error: 'Introuvable' });
-
   await user.update(payload);
-
-  const plain = user.toJSON();
-  plain.avatarUrl = normalizeAvatar(plain.avatarUrl);
-
-  return res.json(plain);
+  res.json(user);
 };
 
-/**
- * Met à jour l'avatar de l'utilisateur connecté.
- * L'ancien fichier est supprimé si nécessaire.
- */
+// PUT /api/me/avatar
 exports.avatar = async (req, res) => {
   const user = await User.findByPk(req.user.id);
 
-  // supprime l'ancien avatar si c'était un fichier local
+  // on nettoie l'ancien avatar seulement si c'était un fichier local
   if (user.avatarUrl && user.avatarUrl.startsWith('/uploads/')) {
     try {
-      await remove(user.avatarUrl.replace('/uploads/', ''));
+      const key = user.avatarUrl.replace('/uploads/', '');
+      await remove(key);
     } catch (e) {
-      // on ignore
+      // silencieux
     }
   }
 
   const stored = await save(req.file, 'avatars');
+  const url = publicUrl(stored.storageKey);
 
-  // construit une URL publique en fonction du driver (local ou supabase)
-  const avatarUrl = publicUrl(stored.storageKey);
+  await user.update({ avatarUrl: url });
 
-  await user.update({ avatarUrl });
-
-  return res.json({ avatarUrl });
+  res.json({ avatarUrl: url });
 };
